@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+import os
 import cohere
 import joblib
 import pickle
@@ -19,10 +20,11 @@ from collections import Counter
 nltk.download('stopwords')
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Loaded from env
 
+mongo_uri = os.getenv('MONGO_URI')
 try:
-    client = MongoClient("mongodb://localhost:27017/")
+    client = MongoClient(mongo_uri)
     db = client["mental_health_db"]
     results_collection = db["survey_results"]
     MONGODB_AVAILABLE = True
@@ -30,7 +32,9 @@ except Exception as e:
     print(f"Warning: MongoDB connection failed: {e}")
     MONGODB_AVAILABLE = False
 
-co = cohere.Client("FEE0BBIfO1Qhgcz5FPmyDmYwcKS48DjX6QUnrZ0F")
+
+cohere_api_key = os.getenv('COHERE_API_KEY')
+co = cohere.Client(cohere_api_key)
 
 questions = [
     {"type": "word", "text": "Alone →", "placeholder": "e.g., isolated, peaceful, scared"},
@@ -227,4 +231,4 @@ def predict_all_models(text):
     return predictions
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
