@@ -8,33 +8,47 @@ import nltk
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
+from pymongo import MongoClient
+from collections import Counter
+
+
+nltk.download('stopwords')
+
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'fallback_secret')
+
+
+mongo_uri = os.getenv('MONGO_URI')
+MONGODB_AVAILABLE = False
+try:
+    if mongo_uri:
+        client = MongoClient(mongo_uri)
+        db = client["mental_health_db"]
+        results_collection = db["survey_results"]
+        MONGODB_AVAILABLE = True
+    else:
+        print("⚠️ MONGO_URI not set in environment.")
+except Exception as e:
+    print(f"MongoDB connection error: {e}")
+
+
+cohere_api_key = os.getenv('COHERE_API_KEY')
+if not cohere_api_key:
+    raise ValueError("⚠️ COHERE_API_KEY is not set.")
+co = cohere.Client(cohere_api_key)
+
+
 try:
     from tensorflow.keras.models import load_model
     TENSORFLOW_AVAILABLE = True
 except ImportError:
     TENSORFLOW_AVAILABLE = False
-    print("Warning: TensorFlow not available. TensorFlow model will be skipped.")
-from pymongo import MongoClient
-from collections import Counter
-
-nltk.download('stopwords')
-
-app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Loaded from env
-
-mongo_uri = os.getenv('MONGO_URI')
-try:
-    client = MongoClient(mongo_uri)
-    db = client["mental_health_db"]
-    results_collection = db["survey_results"]
-    MONGODB_AVAILABLE = True
-except Exception as e:
-    print(f"Warning: MongoDB connection failed: {e}")
-    MONGODB_AVAILABLE = False
+    print("⚠️ TensorFlow not installed; skipping tf_model loading.")
 
 
-cohere_api_key = os.getenv('COHERE_API_KEY')
-co = cohere.Client(cohere_api_key)
+tokenizer = RegexpTokenizer(r'\w+')
+stop_words = set(stopwords.words('english'))
+ps = PorterStemmer()
 
 questions = [
     {"type": "word", "text": "Alone →", "placeholder": "e.g., isolated, peaceful, scared"},
@@ -79,7 +93,7 @@ def predict_text():
         "input_text": text
     })
 
-@app.route('/questions', methods=['GET'])
+@app.route('/questions')
 def get_questions():
     return jsonify(questions)
 
@@ -104,7 +118,7 @@ def submit():
                 "final_result": final_result
             })
         except Exception as e:
-            print(f"Warning: Could not save to MongoDB: {e}")
+            print(f"MongoDB insert failed: {e}")
 
     session['analysis'] = full_analysis
     session['second_paragraph'] = compressed_summary
@@ -119,9 +133,13 @@ def results():
     second_paragraph = session.get('second_paragraph')
     predictions = session.get('predictions')
     final_result = session.get('final_result')
+
     if not analysis or not predictions:
         return redirect(url_for('home'))
+
     return render_template('results.html', analysis=analysis, second_paragraph=second_paragraph, predictions=predictions, final_result=final_result)
+
+
 
 def analyze_responses(responses):
     try:
@@ -144,14 +162,12 @@ def analyze_responses(responses):
         )
         return response.text.strip()
     except Exception as e:
-        print(f"Error with Cohere API: {e}")
-        return "Unable to analyze responses at this time. Please try again later."
+        print(f"Cohere API error: {e}")
+        return "Unable to analyze responses at this time."
 
 def compress_summary(paragraph):
     try:
-        prompt = f"""Compress this paragraph into a summary of 50-60 words:
-        {paragraph}
-        """
+        prompt = f"Compress this paragraph into a summary of 50-60 words:\n{paragraph}"
         response = co.chat(
             model="command-r",
             message=prompt,
@@ -159,25 +175,15 @@ def compress_summary(paragraph):
         )
         return response.text.strip()
     except Exception as e:
-        print(f"Error with Cohere API: {e}")
+        print(f"Cohere compression error: {e}")
         return paragraph[:100] + "..." if len(paragraph) > 100 else paragraph
 
 def majority_vote(preds):
     labels = [v.lower().strip() for v in preds.values()]
     count = Counter(labels)
-    print(f"Individual model predictions: {preds}")
-    print(f"Labels after processing: {labels}")
-    print(f"Count of each label: {count}")
     if count["depression"] > count["non-depression"]:
-        result = "Depressed"
-    else:
-        result = "Not Depressed"
-    print(f"Final result: {result}")
-    return result
-
-tokenizer = RegexpTokenizer(r'\w+')
-stop_words = set(stopwords.words('english'))
-ps = PorterStemmer()
+        return "Depressed"
+    return "Not Depressed"
 
 def clean_text(text):
     text = str(text).lower()
@@ -188,47 +194,47 @@ def clean_text(text):
 
 def predict_all_models(text):
     predictions = {}
-
     cleaned = clean_text(text)
+
+    try:
+        vectorizer = joblib.load('ss/tfidf.pkl')
+        transformed = vectorizer.transform([cleaned]).toarray()
+
+        label_encoder = joblib.load('ss/label_encoder.pkl')
+        def decode_label(label):
+            return label_encoder.inverse_transform([label])[0]
+
+        models = {
+            "Naive Bayes": joblib.load("ss/naive_bayes.pkl"),
+            "Decision Tree": joblib.load("ss/decision_tree.pkl"),
+            "Random Forest": joblib.load("ss/random_forest.pkl"),
+            "XGBoost": joblib.load("ss/xgboost.pkl"),
+            "Logistic Regression": joblib.load("ss/logistic_regression.pkl"),
+        }
+
+        for name, model in models.items():
+            pred = model.predict(transformed)[0]
+            predictions[name] = decode_label(pred)
+
+        with open("ss/lightgbm.pkl", "rb") as f:
+            lgbm_model = pickle.load(f)
+        pred = lgbm_model.predict(transformed)[0]
+        predictions["LightGBM"] = decode_label(pred)
+
+        if TENSORFLOW_AVAILABLE:
+            tf_model = load_model("ss/tf_model.keras")
+            tf_pred = tf_model.predict(transformed)
+            tf_label = np.argmax(tf_pred, axis=1)[0]
+            predictions["TensorFlow"] = decode_label(tf_label)
+        else:
+            predictions["TensorFlow"] = "Not available"
+
+    except Exception as e:
+        print(f"Model prediction error: {e}")
     
-    vectorizer = joblib.load('ss/tfidf.pkl')
-    transformed = vectorizer.transform([cleaned]).toarray()
-
-    label_encoder = joblib.load('ss/label_encoder.pkl')
-    def decode_label(label):
-        return label_encoder.inverse_transform([label])[0]
-
-    nb_model = joblib.load("ss/naive_bayes.pkl")
-    pred = nb_model.predict(transformed)[0]
-    predictions["Naive Bayes"] = decode_label(pred)
-
-    dt_model = joblib.load("ss/decision_tree.pkl")
-    pred = dt_model.predict(transformed)[0]
-    predictions["Decision Tree"] = decode_label(pred)
-
-    rf_model = joblib.load("ss/random_forest.pkl")
-    pred = rf_model.predict(transformed)[0]
-    predictions["Random Forest"] = decode_label(pred)
-
-    xgb_model = joblib.load("ss/xgboost.pkl")
-    pred = xgb_model.predict(transformed)[0]
-    predictions["XGBoost"] = decode_label(pred)
-
-    lr_model = joblib.load("ss/logistic_regression.pkl")
-    pred = lr_model.predict(transformed)[0]
-    predictions["Logistic Regression"] = decode_label(pred)
-
-    with open("ss/lightgbm.pkl", "rb") as f:
-        lgbm_model = pickle.load(f)
-    pred = lgbm_model.predict(transformed)[0]
-    predictions["LightGBM"] = decode_label(pred)
-
-    tf_model = load_model("ss/tf_model.keras")
-    tf_pred = tf_model.predict(transformed)
-    tf_pred_label = np.argmax(tf_pred, axis=1)[0]
-    predictions["TensorFlow"] = decode_label(tf_pred_label)
-
     return predictions
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
