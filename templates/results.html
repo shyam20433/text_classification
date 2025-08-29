@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Result</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(120deg, #e0f7fa 0%, #e8f5e9 100%);
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 0 40px 0;
+        }
+        h2 {
+            color: #2e7d32;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 6px;
+            margin-top: 32px;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card {
+            background: #fff;
+            padding: 24px 28px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(44, 62, 80, 0.08);
+            margin-bottom: 28px;
+        }
+        .result-highlight {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 24px 0 32px 0;
+            padding: 24px 0;
+            border-radius: 12px;
+            font-size: 2.1rem;
+            font-weight: bold;
+            box-shadow: 0 2px 12px rgba(44, 62, 80, 0.09);
+            background: linear-gradient(90deg, #e8f5e9 60%, #fff 100%);
+        }
+        .result-highlight.depressed {
+            color: #c62828;
+            background: linear-gradient(90deg, #ffebee 60%, #fff 100%);
+            border: 2px solid #c62828;
+        }
+        .result-highlight.not-depressed {
+            color: #2e7d32;
+            background: linear-gradient(90deg, #e8f5e9 60%, #fff 100%);
+            border: 2px solid #2e7d32;
+        }
+        .result-label {
+            padding: 8px 32px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.7);
+            box-shadow: 0 1px 4px rgba(44, 62, 80, 0.04);
+        }
+        ul {
+            background: #e8f5e9;
+            padding: 18px 22px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 1.1rem;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .view-btn {
+            display: inline-block;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            padding: 12px 28px;
+            background: linear-gradient(90deg, #43a047 60%, #66bb6a 100%);
+            color: #fff;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+            transition: background 0.3s, transform 0.2s;
+        }
+        .view-btn:hover {
+            background: linear-gradient(90deg, #2e7d32 60%, #43a047 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 12px 32px;
+            background: #388e3c;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border: none;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #2e7d32;
+        }
+        @media (max-width: 900px) {
+            body {
+                max-width: 98vw;
+                padding: 18px 0 24px 0;
+            }
+            .card, .result-highlight {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+        @media (max-width: 700px) {
+            h2 {
+                font-size: 1.3rem;
+            }
+            .card, .result-highlight {
+                padding: 12px 4px;
+                font-size: 1rem;
+            }
+            .result-label {
+                padding: 6px 12px;
+                font-size: 1rem;
+            }
+            .view-btn, .back-btn {
+                padding: 10px 16px;
+                font-size: 1rem;
+            }
+            ul {
+                padding: 10px 8px;
+                font-size: 1rem;
+            }
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 4px 0 10px 0;
+            }
+            h2 {
+                font-size: 1.1rem;
+                gap: 5px;
+            }
+            .card, .result-highlight {
+                padding: 6px 2px;
+                font-size: 0.95rem;
+            }
+            .result-label {
+                padding: 4px 6px;
+                font-size: 0.95rem;
+            }
+            .view-btn, .back-btn {
+                padding: 8px 8px;
+                font-size: 0.95rem;
+            }
+            ul {
+                padding: 6px 2px;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+</head>
+<body>
+    <h2><i class="fa-solid fa-brain"></i> Psychological Summary</h2>
+    <div class="card">
+        <p>{{ analysis }}</p>
+    </div>
+
+    <h2><i class="fa-solid fa-heart-pulse"></i> Depression Result</h2>
+    <div class="result-highlight {{ 'depressed' if final_result == 'Depressed' else 'not-depressed' }}">
+        <span class="result-label">{{ final_result }}</span>
+    </div>
+
+    <button id="viewModelsBtn" onclick="toggleModels()" class="view-btn">View Model Outputs</button>
+    <div id="modelOutputs" style="display: none;">
+        <h2><i class="fa-solid fa-robot"></i> Model Predictions</h2>
+        <ul>
+            {% for model, prediction in predictions.items() %}
+                <li><strong>{{ model }}:</strong> {{ prediction }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <a href="/" class="back-btn">Go Back</a>
+
+    <script>
+        function toggleModels() {
+            const modelDiv = document.getElementById('modelOutputs');
+            const btn = document.getElementById('viewModelsBtn');
+            if (modelDiv.style.display === 'none') {
+                modelDiv.style.display = 'block';
+                btn.textContent = 'Hide Model Outputs';
+            } else {
+                modelDiv.style.display = 'none';
+                btn.textContent = 'View Model Outputs';
+            }
+        }
+    </script>
+</body>
+</html>

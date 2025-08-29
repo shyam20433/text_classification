@@ -1,0 +1,35 @@
+[
+    {"question": "Alone →", "answer": "empty"},
+    {"question": "Future →", "answer": "bleak"},
+    {"question": "Hope →", "answer": "diminishing"},
+    {"question": "Failure →", "answer": "constant"},
+    {"question": "Sleep →", "answer": "interrupted"},
+    {"question": "Joy →", "answer": "missing"},
+    {"question": "Home →", "answer": "sad"},
+    {"question": "Regret →", "answer": "a lot"},
+    {"question": "Success →", "answer": "others"},
+    {"question": "Mistake →", "answer": "me"},
+    {"question": "Describe your ideal day in 3 words →", "answer": "silent, dark, sleep"},
+    {"question": "Complete: 'When I wake up, I feel...' →", "answer": "defeated"},
+    {"question": "What's something you've given up on? →", "answer": "relationships"},
+    {"question": "If emotions were weather, yours would be... →", "answer": "stormy"},
+    {"question": "What's the hardest part of your day? →", "answer": "existing"},
+    {"question": "What comforts you when you're low? →", "answer": "crying alone"},
+    {"question": "'I wish people knew...' →", "answer": "I'm struggling silently"},
+    {"question": "What's one thing you're proud of? →", "answer": "surviving"},
+    {"question": "If your mind was a room, what's in it? →", "answer": "darkness and noise"},
+    {"question": "What does 'okay' look like for you? →", "answer": "just breathing"},
+    {"question": "Rate your energy today (1-10) →", "answer": "1"},
+    {"question": "Do you cancel plans often? (Y/N) →", "answer": "Y"},
+    {"question": "How many hours do you sleep? →", "answer": "3"},
+    {"question": "Do you still enjoy old hobbies? (Y/N) →", "answer": "N"},
+    {"question": "When stressed, you: (1) isolate or (2) seek people →", "answer": "1"},
+    {"question": "How often do you go outside? (days/week) →", "answer": "0"},
+    {"question": "Do you feel rested in the morning? (Y/N) →", "answer": "N"},
+    {"question": "How manageable is daily self-care? (1-10) →", "answer": "2"},
+    {"question": "Do you have someone to talk to? (Y/N) →", "answer": "N"},
+    {"question": "Last time you felt genuine joy? →", "answer": "months ago"}
+]==== depressed
+
+
+

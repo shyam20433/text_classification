@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mind Garden Assessment</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(120deg, #e0f7fa 0%, #e8f5e9 100%);
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 0 40px 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #2e7d32;
+            letter-spacing: 1px;
+            margin-bottom: 18px;
+        }
+
+        .question-container {
+            margin-bottom: 32px;
+            background: linear-gradient(100deg, #fff 80%, #e8f5e9 100%);
+            padding: 28px 24px 22px 24px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(44, 62, 80, 0.08);
+            display: none;
+            border: 1px solid #e0e0e0;
+            transition: box-shadow 0.2s;
+        }
+        .question-container.active {
+            display: block;
+            box-shadow: 0 8px 32px rgba(44, 62, 80, 0.13);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1.5px solid #bdbdbd;
+            box-sizing: border-box;
+            font-size: 16px;
+            background: #f9fbe7;
+            transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border: 1.5px solid #388e3c;
+            outline: none;
+            background: #fff;
+        }
+
+        button {
+            background: linear-gradient(90deg, #43a047 60%, #66bb6a 100%);
+            color: white;
+            padding: 15px 28px;
+            font-size: 17px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+            transition: background 0.3s, transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: linear-gradient(90deg, #2e7d32 60%, #43a047 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+            gap: 16px;
+        }
+
+        .result-box {
+            background: linear-gradient(100deg, #e8f5e9 80%, #fff 100%);
+            padding: 32px 28px;
+            border-radius: 12px;
+            margin-top: 36px;
+            box-shadow: 0 2px 12px rgba(44, 62, 80, 0.09);
+            display: none;
+            font-size: 18px;
+        }
+
+        .model-predictions {
+            font-family: monospace;
+            background: #f1f8e9;
+            padding: 14px;
+            border-radius: 8px;
+            margin-top: 18px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 7px;
+            margin: 28px 0 18px 0;
+            box-shadow: 0 1px 4px rgba(44, 62, 80, 0.04);
+        }
+        .progress-bar {
+            height: 12px;
+            background: linear-gradient(90deg, #43a047 60%, #66bb6a 100%);
+            border-radius: 7px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 7px;
+            font-size: 15px;
+            color: #555;
+        }
+
+        .question-number {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 12px;
+            font-size: 17px;
+        }
+        .question-prompt {
+            font-size: 20px;
+            margin-bottom: 18px;
+            color: #333;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 28px 0;
+        }
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #388e3c;
+            border-radius: 50%;
+            width: 54px;
+            height: 54px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+       
+        @media (max-width: 700px) {
+            body {
+                padding: 10px 2vw;
+            }
+            .question-container, .result-box {
+                padding: 16px 6px;
+            }
+            .progress-container {
+                margin: 18px 0 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🌿 Mind Garden Assessment</h1>
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="/text-input" style="color: #388e3c; text-decoration: none; font-weight: bold; padding: 10px 20px; border: 2px solid #388e3c; border-radius: 8px; display: inline-block;">
+            🧠 Direct Text Analysis
+        </a>
+    </div>
+
+   
+    <div id="progressContainer" class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-text" id="progressText">Loading questions...</div>
+    </div>
+
+    <div id="questionnaire"></div>
+
+    
+    <div class="button-container">
+        <button id="prevBtn" onclick="prevQuestion()" disabled>← Previous</button>
+        <button id="nextBtn" onclick="nextQuestion()">Next →</button>
+    </div>
+    <button id="submitBtn" onclick="submitSurvey()" style="display: none; width: 100%;">Submit Assessment</button>
+
+   
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p>Analyzing your responses...</p>
+    </div>
+
+  
+    <div id="result" class="result-box"></div>
+
+    <script>
+        let questions = [];
+        let currentQuestion = 0;
+
+        async function loadQuestions() {
+            try {
+                const response = await fetch('/questions');
+                questions = await response.json();
+                const container = document.getElementById('questionnaire');
+
+                questions.forEach((q, i) => {
+                    const inputField = (q.type === 'scenario')
+                        ? `<textarea id="q${i}" placeholder="${q.placeholder || ''}"></textarea>`
+                        : `<input type="text" id="q${i}" placeholder="${q.placeholder || ''}">`;
+
+                    container.innerHTML += `
+                        <div class="question-container" id="qContainer${i}">
+                            <div class="question-number">Question ${i + 1} of ${questions.length}</div>
+                            <div class="question-prompt">${q.text}</div>
+                            ${inputField}
+                        </div>
+                    `;
+                });
+
+                showQuestion(0);
+                updateProgress();
+            } catch (error) {
+                console.error("Error loading questions:", error);
+                document.getElementById('progressText').textContent = "Error loading questions. Please refresh.";
+            }
+        }
+
+        function showQuestion(index) {
+            document.querySelectorAll('.question-container').forEach(q => q.classList.remove('active'));
+            document.getElementById(`qContainer${index}`).classList.add('active');
+
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').style.display = index === questions.length - 1 ? 'none' : 'block';
+            document.getElementById('submitBtn').style.display = index === questions.length - 1 ? 'block' : 'none';
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                showQuestion(currentQuestion);
+                updateProgress();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion(currentQuestion);
+                updateProgress();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent =
+                `Question ${currentQuestion + 1} of ${questions.length} (${Math.round(progress)}% completed)`;
+        }
+
+        async function submitSurvey() {
+            const responses = questions.map((_, i) => document.getElementById(`q${i}`).value.trim());
+
+            if (responses.some(r => r === "")) {
+                alert("Please answer all questions before submitting.");
+                return;
+            }
+
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('questionnaire').style.display = 'none';
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+
+            try {
+                const res = await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(responses)
+                });
+
+                if (!res.ok) throw new Error('Submission failed.');
+
+                const data = await res.json();
+                if (data.success) {
+                    setTimeout(() => {
+                        window.location.href = '/results';
+                    }, 1000);
+                } else {
+                    throw new Error('Submission failed.');
+                }
+            } catch (error) {
+                console.error("Submission Error:", error);
+                document.getElementById('result').innerHTML = `
+                    <h2>Error</h2>
+                    <p>There was an error processing your responses. Please try again later.</p>
+                `;
+                document.getElementById('result').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        window.onload = loadQuestions;
+    </script>
+</body>
+</html>
